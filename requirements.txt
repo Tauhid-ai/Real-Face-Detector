@@ -1,0 +1,8 @@
+# Simple requirements - no heavy dependencies!
+# Just install: pip install -r requirements.txt
+
+Flask>=3.0.0
+opencv-python>=4.8.0
+numpy>=1.26.0
+Pillow>=10.0.0
+

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Attendance - Face Recognition System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="bi bi-camera-reels-fill"></i> Face Recognition System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('register') }}">Register Face</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('attendance') }}">Take Attendance</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('records') }}">Attendance Records</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('manage_users') }}">Manage Users</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0"><i class="bi bi-camera-video-fill"></i> Take Attendance</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Alert Messages -->
+                        <div id="alertContainer"></div>
+
+                        <!-- Camera Section -->
+                        <div class="text-center mb-4">
+                            <div id="cameraContainer" style="display: none;">
+                                <img id="videoFeed" src="{{ url_for('video_feed') }}" 
+                                     alt="Video Feed" class="img-fluid rounded shadow" 
+                                     style="max-width: 100%; border: 3px solid #0d6efd;">
+                            </div>
+                            <div id="placeholderContainer" class="text-center py-5">
+                                <i class="bi bi-camera-video" style="font-size: 5rem; color: #ccc;"></i>
+                                <p class="text-muted mt-3">Click "Start Camera" to begin attendance marking</p>
+                            </div>
+                        </div>
+
+                        <!-- Control Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center mb-4">
+                            <button id="startCameraBtn" class="btn btn-success btn-lg">
+                                <i class="bi bi-play-circle"></i> Start Camera
+                            </button>
+                            <button id="stopCameraBtn" class="btn btn-danger btn-lg" style="display: none;">
+                                <i class="bi bi-stop-circle"></i> Stop Camera
+                            </button>
+                            <button id="markAttendanceBtn" class="btn btn-primary btn-lg" style="display: none;">
+                                <i class="bi bi-check-circle"></i> Mark Attendance
+                            </button>
+                        </div>
+
+                        <!-- Status Display -->
+                        <div id="statusDisplay" class="text-center"></div>
+
+                        <!-- Instructions -->
+                        <div class="card bg-light mt-4">
+                            <div class="card-body">
+                                <h6><i class="bi bi-info-circle"></i> Instructions:</h6>
+                                <ol class="mb-0">
+                                    <li>Click "Start Camera" to activate your webcam</li>
+                                    <li>Position yourself in front of the camera</li>
+                                    <li>Click "Mark Attendance" when you're ready</li>
+                                    <li>The system will recognize your face and mark attendance automatically</li>
+                                    <li>Each person can only mark attendance once per day</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light text-center py-3 mt-5">
+        <div class="container">
+            <p class="mb-0">&copy; 2025 Face Recognition System. Built with Flask & OpenCV.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let cameraActive = false;
+
+        // Start Camera Button
+        document.getElementById('startCameraBtn').addEventListener('click', function() {
+            fetch('/start_camera', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    cameraActive = true;
+                    document.getElementById('cameraContainer').style.display = 'block';
+                    document.getElementById('placeholderContainer').style.display = 'none';
+                    document.getElementById('startCameraBtn').style.display = 'none';
+                    document.getElementById('stopCameraBtn').style.display = 'inline-block';
+                    document.getElementById('markAttendanceBtn').style.display = 'inline-block';
+                    showAlert('Camera started successfully!', 'success');
+                } else {
+                    showAlert(data.message || 'Failed to start camera', 'danger');
+                }
+            })
+            .catch(error => {
+                showAlert('Error starting camera: ' + error, 'danger');
+            });
+        });
+
+        // Stop Camera Button
+        document.getElementById('stopCameraBtn').addEventListener('click', function() {
+            fetch('/stop_camera', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                cameraActive = false;
+                document.getElementById('cameraContainer').style.display = 'none';
+                document.getElementById('placeholderContainer').style.display = 'block';
+                document.getElementById('startCameraBtn').style.display = 'inline-block';
+                document.getElementById('stopCameraBtn').style.display = 'none';
+                document.getElementById('markAttendanceBtn').style.display = 'none';
+                document.getElementById('statusDisplay').innerHTML = '';
+                showAlert('Camera stopped', 'info');
+            });
+        });
+
+        // Mark Attendance Button
+        document.getElementById('markAttendanceBtn').addEventListener('click', function() {
+            if (!cameraActive) {
+                showAlert('Please start the camera first', 'warning');
+                return;
+            }
+
+            // Disable button during processing
+            const btn = document.getElementById('markAttendanceBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
+            fetch('/capture_frame', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle"></i> Mark Attendance';
+
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    document.getElementById('statusDisplay').innerHTML = `
+                        <div class="alert alert-success">
+                            <h5><i class="bi bi-check-circle-fill"></i> ${data.message}</h5>
+                            ${data.user ? `<p><strong>Name:</strong> ${data.user.name}<br>
+                                          <strong>Roll Number:</strong> ${data.user.roll_number}</p>` : ''}
+                        </div>
+                    `;
+                } else {
+                    showAlert(data.message, 'warning');
+                    document.getElementById('statusDisplay').innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill"></i> ${data.message}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle"></i> Mark Attendance';
+                showAlert('Error: ' + error, 'danger');
+            });
+        });
+
+        // Show Alert Function
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alertDiv);
+
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+
