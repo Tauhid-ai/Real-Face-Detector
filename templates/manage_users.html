@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users - Face Recognition System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="bi bi-camera-reels-fill"></i> Face Recognition System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('register') }}">Register Face</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('attendance') }}">Take Attendance</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('records') }}">Attendance Records</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('manage_users') }}">Manage Users</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="bi bi-people-fill"></i> Manage Registered Users</h4>
+                        <a href="{{ url_for('register') }}" class="btn btn-light btn-sm">
+                            <i class="bi bi-person-plus"></i> Add New User
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <!-- Flash Messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                        <i class="bi bi-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }}-fill"></i> {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        {% if users %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th><i class="bi bi-hash"></i> #</th>
+                                            <th><i class="bi bi-image"></i> Photo</th>
+                                            <th><i class="bi bi-person"></i> Name</th>
+                                            <th><i class="bi bi-card-text"></i> Roll Number</th>
+                                            <th><i class="bi bi-gear"></i> Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for user in users %}
+                                        <tr>
+                                            <td>{{ loop.index }}</td>
+                                            <td>
+                                                {% if user.image_path %}
+                                                    {% set img_path = user.image_path.replace('static/', '') if 'static/' in user.image_path else user.image_path %}
+                                                    <img src="{{ url_for('static', filename=img_path) }}" 
+                                                         alt="{{ user.name }}" 
+                                                         class="img-thumbnail" 
+                                                         style="width: 60px; height: 60px; object-fit: cover;"
+                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                                                    <i class="bi bi-person-circle" style="font-size: 2rem; color: #ccc; display: none;"></i>
+                                                {% else %}
+                                                    <i class="bi bi-person-circle" style="font-size: 2rem; color: #ccc;"></i>
+                                                {% endif %}
+                                            </td>
+                                            <td><strong>{{ user.name }}</strong></td>
+                                            <td>{{ user.roll_number }}</td>
+                                            <td>
+                                                <form method="POST" action="{{ url_for('delete_user', roll_number=user.roll_number) }}" 
+                                                      onsubmit="return confirm('Kya aap sure hain? User {{ user.name }} (Roll: {{ user.roll_number }}) ko delete karna hai? Ye action undo nahi ho sakta.');" 
+                                                      style="display: inline;">
+                                                    <button type="submit" class="btn btn-danger btn-sm">
+                                                        <i class="bi bi-trash"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-3">
+                                <p class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 
+                                    Total Registered Users: <strong>{{ users|length }}</strong>
+                                </p>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                                <h5 class="mt-3 text-muted">No users registered yet</h5>
+                                <p class="text-muted">Start by registering users to manage them here.</p>
+                                <a href="{{ url_for('register') }}" class="btn btn-primary">
+                                    <i class="bi bi-person-plus"></i> Register First User
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Warning Card -->
+                <div class="card shadow mt-4 border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0"><i class="bi bi-exclamation-triangle-fill"></i> Warning</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0 text-muted">
+                            <li>User delete karne se uska face data aur photo permanently delete ho jayega</li>
+                            <li>Deleted user ki attendance records database mein rahengi</li>
+                            <li>Ye action undo nahi ho sakta</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light text-center py-3 mt-5">
+        <div class="container">
+            <p class="mb-0">&copy; 2025 Face Recognition System. Built with Flask & OpenCV.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
